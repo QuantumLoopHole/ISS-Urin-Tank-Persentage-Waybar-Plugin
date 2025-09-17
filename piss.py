@@ -7,6 +7,8 @@ import sys
 URI = "wss://push.lightstreamer.com/lightstreamer"
 PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
 
+message = "🚽 %"
+
 
 async def main():
     async with websockets.connect(URI, subprotocols=PROTOCOLS) as ws:
@@ -38,7 +40,7 @@ async def main():
                     value = cmd[6:]
                     # Output JSON for Waybar
                     data = {
-                        "text": f" | ISS PISS: {value}%",
+                        "text": f" {message}{value} | %",
                         "tooltip": f"ISS piss value: {value}%",
                         "class": "piss",
                     }
