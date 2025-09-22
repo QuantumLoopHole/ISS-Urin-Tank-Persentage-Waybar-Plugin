@@ -7,6 +7,8 @@ import time
 import os
 import requests
 import subprocess
+from desktop_notifier import DesktopNotifier, Urgency
+
 
 URI = "wss://push.lightstreamer.com/lightstreamer"
 PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
@@ -14,6 +16,15 @@ PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
 
 # It screams in pain, but hey, it works
 async def main():
+    if not check_internet():
+        data = {
+            "text": "No Internet",
+            "tooltip": "Can't access repository",
+            "class": "piss",
+        }
+        print(json.dumps(data), flush=True)
+        return
+
     async with websockets.connect(URI, subprotocols=PROTOCOLS) as ws:
         await ws.send("wsok")
         await ws.send(
@@ -60,6 +71,20 @@ def download_version_file():
         file.write(response.text)
 
 
+def check_internet():
+    try:
+        url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/version.txt"
+        response = requests.get(url)
+        response.raise_for_status()
+
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except EnvironmentError:
+        return False
+
+
 def ask_user_download():
     try:
         # Present a simple Yes/No menu
@@ -85,7 +110,7 @@ def ask_user_continue_update_checks():
                 "rofi",
                 "-dmenu",
                 "-p",
-                "Would you like to check for update in the future?",
+                "Would you like to check for updates in the future?",
             ],
             input="Yes\nNo\n".encode(),
             capture_output=True,
@@ -97,6 +122,9 @@ def ask_user_continue_update_checks():
                 file.write("User opted out of update checks.")
     except FileNotFoundError:
         print("Rofi not installed or not in PATH")
+
+
+notifier = DesktopNotifier(app_name="ISS Urine Tank Percentage")
 
 
 async def version_controll():
