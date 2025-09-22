@@ -17,7 +17,7 @@ For requests: Please feel free to send them my way.
 
 ```
     "custom/ISS_Urine_Tank": {
-      "exec": "~/.config/waybar/scripts/piss.py",
+      "exec": "~/.config/waybar/scripts/IssUrineStatus.py",
       "restart-interval": 0, // keeps it running, not rerun
       "return-type": "json"
     },

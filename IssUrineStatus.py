@@ -4,6 +4,9 @@ import websockets
 import json
 import sys
 import time
+import os
+import requests
+import subprocess
 
 URI = "wss://push.lightstreamer.com/lightstreamer"
 PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
@@ -47,9 +50,57 @@ async def main():
                     print(json.dumps(data), flush=True)
 
 
+def download_version_file():
+    url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/version.txt"
+    response = requests.get(url)
+    response.raise_for_status()
+
+    file_path = "./version.txt"
+    with open(file_path, "w") as file:
+        file.write(response.text)
+
+
+def ask_user_download():
+    try:
+        # Present a simple Yes/No menu
+        rofi = subprocess.run(
+            ["rofi", "-dmenu", "-p", "Version file is missing. Download now?"],
+            input="Yes\nNo\n".encode(),
+            capture_output=True,
+        )
+        choice = rofi.stdout.decode().strip()
+        if choice == "Yes":
+            download_version_file()
+        else:
+            print("User chose not to download")
+    except FileNotFoundError:
+        print("Rofi not installed or not in PATH")
+
+def ask_user_continue_update_checks():
+    try:
+        rofi = subprocess.run(
+            ["rofi", "-dmenu", "-p", "Would you like to check for update in the future?"],
+            input="Yes\nNo\n".encode(),
+            capture_output=True,
+            
+        )
+
+async def version_controll():
+    # Lockout file to see if user wants to check for updates
+    if os.path.exists("./VersionControll.lock"):
+        return
+
+    if not os.path.exists("./version.txt"):
+        # Run rofi prompt in a thread to avoid blocking the event loop
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, ask_user_download)
+
+
 if __name__ == "__main__":
+    # Version controll
+    asyncio.run(version_controll())
+    # Main code
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(0)
-
