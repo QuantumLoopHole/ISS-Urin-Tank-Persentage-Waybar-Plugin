@@ -26,3 +26,7 @@ For requests: Please feel free to send them my way.
 3. Add iss_urine_tank to your waybar modules list
 
 ```custom/ISS_Urine_Tank```
+
+## Dependencies
+
+Rofi - <https://github.com/davatorium/rofi>

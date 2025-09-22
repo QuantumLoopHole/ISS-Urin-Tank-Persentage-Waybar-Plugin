@@ -73,17 +73,31 @@ def ask_user_download():
             download_version_file()
         else:
             print("User chose not to download")
+            ask_user_continue_update_checks()
     except FileNotFoundError:
         print("Rofi not installed or not in PATH")
+
 
 def ask_user_continue_update_checks():
     try:
         rofi = subprocess.run(
-            ["rofi", "-dmenu", "-p", "Would you like to check for update in the future?"],
+            [
+                "rofi",
+                "-dmenu",
+                "-p",
+                "Would you like to check for update in the future?",
+            ],
             input="Yes\nNo\n".encode(),
             capture_output=True,
-            
         )
+        choice = rofi.stdout.decode().strip()
+        if choice == "No":
+            # Create lockout file
+            with open("./VersionControll.lock", "w") as file:
+                file.write("User opted out of update checks.")
+    except FileNotFoundError:
+        print("Rofi not installed or not in PATH")
+
 
 async def version_controll():
     # Lockout file to see if user wants to check for updates
