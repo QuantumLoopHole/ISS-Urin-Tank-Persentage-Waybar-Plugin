@@ -3,13 +3,13 @@ import asyncio
 import websockets
 import json
 import sys
+import time
 
 URI = "wss://push.lightstreamer.com/lightstreamer"
 PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
 
-message = "🚽 %"
 
-
+# It screams in pain, but hey, it works
 async def main():
     async with websockets.connect(URI, subprotocols=PROTOCOLS) as ws:
         await ws.send("wsok")
@@ -33,15 +33,15 @@ async def main():
                         "LS_group=NODE3000005&"
                         "LS_schema=Value&"
                         "LS_snapshot=true&"
-                        "LS_requested_max_frequency=0.01&"
+                        "LS_requested_max_frequency=1.0&"
                         "LS_ack=false"
                     )
                 elif cmd.startswith("U,1,1,"):
                     value = cmd[6:]
                     # Output JSON for Waybar
                     data = {
-                        "text": f" {message}{value} | %",
-                        "tooltip": f"ISS piss value: {value}%",
+                        "text": f" | ISS PISS: {value}%",
+                        "tooltip": f"last update: {time.strftime('%Y-%m-%d %H:%M:%S')}",
                         "class": "piss",
                     }
                     print(json.dumps(data), flush=True)
@@ -52,3 +52,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(0)
+
