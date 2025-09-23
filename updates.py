@@ -107,4 +107,3 @@ async def version_control(notifier):
         return
 
     await update(notifier)
-
