@@ -10,6 +10,10 @@ import subprocess
 from desktop_notifier import DesktopNotifier, Urgency
 
 
+SELF_PATH = os.path.abspath(__file__)
+VERSION_FILE = "~/.config/waybar/scripts/urine_version.txt"
+UPDATE_LOCK_FILE = "~/.config/waybar/scripts/VersionControll.lock"
+
 URI = "wss://push.lightstreamer.com/lightstreamer"
 PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
 
@@ -133,7 +137,7 @@ def ask_user_continue_update_checks():
         )
         choice = rofi.stdout.decode().strip()
         if choice == "No":
-            with open("./VersionControll.lock", "w") as f:
+            with open(UPDATE_LOCK_FILE, "w") as f:
                 f.write("User opted out of update checks.")
     except FileNotFoundError:
         print("Rofi not installed or not in PATH")
@@ -162,7 +166,7 @@ async def update():
         return
 
     try:
-        with open("./IssUrineStatus.py", "w") as f:
+        with open(SELF_PATH, "w") as f:
             f.write(text)
         await download_version_file()
     except Exception as e:
@@ -182,7 +186,7 @@ async def up_to_date() -> bool:
     remote = await fetch_text(url)
     if not remote:
         return True
-    if not os.path.exists("./version.txt"):
+    if not os.path.exists(VERSION_FILE):
         return False
     with open("./version.txt") as f:
         return f.read().strip() == remote.strip()
@@ -191,7 +195,7 @@ async def up_to_date() -> bool:
 async def version_controll():
     if not await check_internet():
         return
-    if os.path.exists("./VersionControll.lock"):
+    if os.path.exists(UPDATE_LOCK_FILE):
         return
     if not os.path.exists("./version.txt"):
         loop = asyncio.get_running_loop()
@@ -210,4 +214,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(0)
-
