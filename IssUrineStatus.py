@@ -57,7 +57,8 @@ async def main():
                 elif cmd.startswith("U,1,1,"):
                     value = cmd[6:]
                     data = {
-                        "text": f"{value}",
+                        # Toilet emoji: 🚽
+                        "text": f" 🚽{value}%",
                         "tooltip": f"last update: {time.strftime('%Y-%m-%d %H:%M:%S')}",
                         "class": "piss",
                     }
@@ -98,7 +99,14 @@ async def download_version_file():
 def ask_user_download():
     try:
         rofi = subprocess.run(
-            ["rofi", "-dmenu", "-p", "Version file is missing. Download now?"],
+            [
+                "rofi",
+                "-dmenu",
+                "-p",
+                "ISS Urinate",
+                "-msg",
+                "Version file is missing. Download now?",
+            ],
             input="Yes\nNo\n".encode(),
             capture_output=True,
         )
