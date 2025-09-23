@@ -13,6 +13,7 @@ from desktop_notifier import DesktopNotifier, Urgency
 SELF_PATH = os.path.abspath(__file__)
 VERSION_FILE = "~/.config/waybar/scripts/urine_version.txt"
 UPDATE_LOCK_FILE = "~/.config/waybar/scripts/VersionControll.lock"
+LOG = "~/.config/waybar/scripts/urine_log.txt"
 
 URI = "wss://push.lightstreamer.com/lightstreamer"
 PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
@@ -30,7 +31,7 @@ async def main():
             "tooltip": "Can't access repository",
             "class": "piss",
         }
-        print(json.dumps(data), flush=True)
+        log(json.dumps(data), flush=True)
         return
 
     async with websockets.connect(URI, subprotocols=PROTOCOLS) as ws:
@@ -66,7 +67,7 @@ async def main():
                         "tooltip": f"last update: {time.strftime('%Y-%m-%d %H:%M:%S')}",
                         "class": "piss",
                     }
-                    print(json.dumps(data), flush=True)
+                    log(json.dumps(data), flush=True)
 
 
 # ------------------------------
@@ -93,7 +94,7 @@ async def download_version_file():
     url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/version.txt"
     text = await fetch_text(url)
     if text:
-        with open("./version.txt", "w") as f:
+        with open(VERSION_FILE, "w") as f:
             f.write(text)
 
 
@@ -120,7 +121,13 @@ def ask_user_download():
         else:
             ask_user_continue_update_checks()
     except FileNotFoundError:
-        print("Rofi not installed or not in PATH")
+        log("Rofi not installed or not in PATH")
+
+
+def log(text: str):
+    with open(LOG, "a") as f:
+        f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {text}\n")
+    print(f"LOG: {text}")
 
 
 def ask_user_continue_update_checks():
@@ -140,17 +147,19 @@ def ask_user_continue_update_checks():
             with open(UPDATE_LOCK_FILE, "w") as f:
                 f.write("User opted out of update checks.")
     except FileNotFoundError:
-        print("Rofi not installed or not in PATH")
+        log("Rofi not installed or not in PATH")
 
 
 # ------------------------------
 # Update handling
 # ------------------------------
 async def update():
+    log("Update available, starting update...")
     print(
         json.dumps({"text": "updating...", "tooltip": "Updating...", "class": "piss"}),
         flush=True,
     )
+
     await notifier.send(
         title="Update Available", message="Starting update...", urgency=Urgency.Normal
     )
@@ -170,7 +179,7 @@ async def update():
             f.write(text)
         await download_version_file()
     except Exception as e:
-        print(f"Failed to write update: {e}")
+        log(f"Failed to write update: {e}")
         return
 
     await notifier.send(
@@ -188,7 +197,7 @@ async def up_to_date() -> bool:
         return True
     if not os.path.exists(VERSION_FILE):
         return False
-    with open("./version.txt") as f:
+    with open(VERSION_FILE) as f:
         return f.read().strip() == remote.strip()
 
 
