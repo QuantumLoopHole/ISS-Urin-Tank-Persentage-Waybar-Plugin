@@ -5,7 +5,7 @@ import json
 import sys
 import time
 import os
-import requests
+import aiohttp
 import subprocess
 from desktop_notifier import DesktopNotifier, Urgency
 
@@ -13,10 +13,14 @@ from desktop_notifier import DesktopNotifier, Urgency
 URI = "wss://push.lightstreamer.com/lightstreamer"
 PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
 
+notifier = DesktopNotifier(app_name="ISS Urine Tank Percentage")
 
-# It screams in pain, but hey, it works
+
+# ------------------------------
+# Core worker
+# ------------------------------
 async def main():
-    if not check_internet():
+    if not await check_internet():
         data = {
             "text": "No Internet",
             "tooltip": "Can't access repository",
@@ -25,7 +29,6 @@ async def main():
         print(json.dumps(data), flush=True)
         return
 
-    # Handel display and data retrival
     async with websockets.connect(URI, subprotocols=PROTOCOLS) as ws:
         await ws.send("wsok")
         await ws.send(
@@ -53,7 +56,6 @@ async def main():
                     )
                 elif cmd.startswith("U,1,1,"):
                     value = cmd[6:]
-                    # Output JSON for Waybar
                     data = {
                         "text": f"{value}",
                         "tooltip": f"last update: {time.strftime('%Y-%m-%d %H:%M:%S')}",
@@ -62,37 +64,39 @@ async def main():
                     print(json.dumps(data), flush=True)
 
 
+# ------------------------------
+# Network utilities
+# ------------------------------
+async def fetch_text(url: str) -> str | None:
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                if resp.status == 200:
+                    return await resp.text()
+    except aiohttp.ClientError:
+        return None
+    return None
+
+
+async def check_internet() -> bool:
+    url = "https://github.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin"
+    text = await fetch_text(url)
+    return text is not None
+
+
 async def download_version_file():
-    try:
-        url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/version.txt"
-        response = requests.get(url)
-        response.raise_for_status()
-    except EnvironmentError:
-        print("Failed to fetch version info")
-    file_path = "./version.txt"
-    with open(file_path, "w") as file:
-        file.write(response.text)
+    url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/version.txt"
+    text = await fetch_text(url)
+    if text:
+        with open("./version.txt", "w") as f:
+            f.write(text)
 
 
-def check_internet():
-    try:
-        url = (
-            "https://github.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin"
-        )
-        response = requests.get(url)
-        response.raise_for_status()
-
-        if response.status_code == 200:
-            return True
-        else:
-            return False
-    except EnvironmentError:
-        return False
-
-
+# ------------------------------
+# Rofi prompts (blocking, run in executor)
+# ------------------------------
 def ask_user_download():
     try:
-        # Present a simple Yes/No menu
         rofi = subprocess.run(
             ["rofi", "-dmenu", "-p", "Version file is missing. Download now?"],
             input="Yes\nNo\n".encode(),
@@ -100,9 +104,8 @@ def ask_user_download():
         )
         choice = rofi.stdout.decode().strip()
         if choice == "Yes":
-            download_version_file()
+            asyncio.run(download_version_file())
         else:
-            print("User chose not to download")
             ask_user_continue_update_checks()
     except FileNotFoundError:
         print("Rofi not installed or not in PATH")
@@ -122,100 +125,80 @@ def ask_user_continue_update_checks():
         )
         choice = rofi.stdout.decode().strip()
         if choice == "No":
-            # Create lockout file
-            with open("./VersionControll.lock", "w") as file:
-                file.write("User opted out of update checks.")
+            with open("./VersionControll.lock", "w") as f:
+                f.write("User opted out of update checks.")
     except FileNotFoundError:
         print("Rofi not installed or not in PATH")
 
 
-notifier = DesktopNotifier(app_name="ISS Urine Tank Percentage")
-
-
+# ------------------------------
+# Update handling
+# ------------------------------
 async def update():
-    # Show status to user
-
-    data = {
-        "text": "updating...",
-        "tooltip": "Updating code, please wait",
-        "class": "piss",
-    }
-    print(json.dumps(data), flush=True)
-
+    print(
+        json.dumps({"text": "updating...", "tooltip": "Updating...", "class": "piss"}),
+        flush=True,
+    )
     await notifier.send(
         title="Update Available", message="Starting update...", urgency=Urgency.Normal
     )
 
-    # Download new code
-    try:
-        url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/IssUrineStatus.py"
-        response = requests.get(url)
-        response.raise_for_status()
-    except EnvironmentError:
-        response = requests.Response()
-        response.status_code = 404
-        print("Failed to fetch update info")
-
-    if response.status_code != 200:
-        print("Failed to fetch update info")
+    url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/IssUrineStatus.py"
+    text = await fetch_text(url)
+    if not text:
         await notifier.send(
-            title="Update Check Failed",
-            message="Could not fetch update info.",
+            title="Update Failed",
+            message="Could not fetch code.",
             urgency=Urgency.Critical,
         )
+        return
 
-    # Update new code
     try:
-        with open("./IssUrineStatus.py", "w") as file:
-            file.write(response.text)
-
+        with open("./IssUrineStatus.py", "w") as f:
+            f.write(text)
         await download_version_file()
     except Exception as e:
         print(f"Failed to write update: {e}")
+        return
 
-    return
+    await notifier.send(
+        title="Update Complete", message="Restarting...", urgency=Urgency.Normal
+    )
+
+    # Restart with new code
+    os.execv(sys.executable, [sys.executable] + sys.argv)
 
 
-def up_to_date():
-    try:
-        url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/version.txt"
-        response = requests.get(url)
-        response.raise_for_status()
-    except EnvironmentError:
-        response = requests.Response()
-        response.status_code = 404
-        print("Failed to fetch update info")
-
-    with open("./version.txt", "r") as file:
-        if file.read().strip() == response.text.strip():
-            return True
-        else:
-            return False
+async def up_to_date() -> bool:
+    url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/version.txt"
+    remote = await fetch_text(url)
+    if not remote:
+        return True
+    if not os.path.exists("./version.txt"):
+        return False
+    with open("./version.txt") as f:
+        return f.read().strip() == remote.strip()
 
 
 async def version_controll():
-    # Lockout file to see if user wants to check for updates
-    if check_internet() is False:
+    if not await check_internet():
         return
-
     if os.path.exists("./VersionControll.lock"):
         return
-
     if not os.path.exists("./version.txt"):
-        # Run rofi prompt in a thread to avoid blocking the event loop
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, ask_user_download)
-
-    if up_to_date():
+    if await up_to_date():
         return
     await update()
 
 
+# ------------------------------
+# Entrypoint
+# ------------------------------
 if __name__ == "__main__":
-    # Version controll
-    asyncio.run(version_controll())
-    # Main code
     try:
+        asyncio.run(version_controll())
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(0)
