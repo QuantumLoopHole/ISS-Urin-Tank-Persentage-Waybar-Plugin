@@ -25,6 +25,11 @@ notifier = DesktopNotifier(app_name="ISS Urine Tank Percentage")
 # Core worker
 # ------------------------------
 async def main():
+    # Check if log exists, if not, create
+    if not os.path.exists(LOG):
+        with open(LOG, "w") as f:
+            f.write("")
+
     if not await check_internet():
         data = {
             "text": "No Internet",
@@ -68,6 +73,12 @@ async def main():
                         "class": "piss",
                     }
                     log(json.dumps(data), flush=True)
+
+
+def log(text: str):
+    with open(LOG, "a") as f:
+        f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {text}\n")
+    print(f"LOG: {text}")
 
 
 # ------------------------------
@@ -122,12 +133,6 @@ def ask_user_download():
             ask_user_continue_update_checks()
     except FileNotFoundError:
         log("Rofi not installed or not in PATH")
-
-
-def log(text: str):
-    with open(LOG, "a") as f:
-        f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {text}\n")
-    print(f"LOG: {text}")
 
 
 def ask_user_continue_update_checks():
