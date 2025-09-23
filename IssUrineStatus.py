@@ -25,11 +25,6 @@ notifier = DesktopNotifier(app_name="ISS Urine Tank Percentage")
 # Core worker
 # ------------------------------
 async def main():
-    # Check if log exists, if not, create
-    if not os.path.exists(LOG):
-        with open(LOG, "w") as f:
-            f.write("")
-
     if not await check_internet():
         data = {
             "text": "No Internet",
@@ -223,6 +218,10 @@ async def version_controll():
 # Entrypoint
 # ------------------------------
 if __name__ == "__main__":
+    # Check if log exists, if not, create
+    if not os.path.exists(LOG):
+        with open(LOG, "w") as f:
+            f.write("")
     try:
         asyncio.run(version_controll())
         asyncio.run(main())
