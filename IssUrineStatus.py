@@ -62,11 +62,13 @@ async def main():
                     print(json.dumps(data), flush=True)
 
 
-def download_version_file():
-    url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/version.txt"
-    response = requests.get(url)
-    response.raise_for_status()
-
+async def download_version_file():
+    try:
+        url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/version.txt"
+        response = requests.get(url)
+        response.raise_for_status()
+    except EnvironmentError:
+        print("Failed to fetch version info")
     file_path = "./version.txt"
     with open(file_path, "w") as file:
         file.write(response.text)
@@ -167,7 +169,7 @@ async def update():
         with open("./IssUrineStatus.py", "w") as file:
             file.write(response.text)
 
-        download_version_file()
+        await download_version_file()
     except Exception as e:
         print(f"Failed to write update: {e}")
 
