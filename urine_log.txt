@@ -1,0 +1,4 @@
+2025-09-23 16:25:41 - {"text": " \ud83d\udebd59%", "tooltip": "last update: 2025-09-23 16:25:41", "class": "piss"}
+2025-09-23 16:32:15 - {"text": " \ud83d\udebd62%", "tooltip": "last update: 2025-09-23 16:32:15", "class": "piss"}
+2025-09-23 16:32:21 - {"text": " \ud83d\udebd62%", "tooltip": "last update: 2025-09-23 16:32:21", "class": "piss"}
+2025-09-23 16:35:09 - {"text": " \ud83d\udebd62%", "tooltip": "last update: 2025-09-23 16:35:09", "class": "piss"}
