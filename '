@@ -131,28 +131,17 @@ notifier = DesktopNotifier(app_name="ISS Urine Tank Percentage")
 
 
 async def update():
-    # Show status to user
+    url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/IssUrineStatus.py"
+    response = requests.get(url)
+    response.raise_for_status()
 
     data = {
         "text": "updating...",
-        "tooltip": "Updating code, please wait",
+        "tooltip": f"Updating code, please wait",
         "class": "piss",
     }
+
     print(json.dumps(data), flush=True)
-
-    await notifier.send(
-        title="Update Available", message="Starting update...", urgency=Urgency.Normal
-    )
-
-    # Download new code
-    try:
-        url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/IssUrineStatus.py"
-        response = requests.get(url)
-        response.raise_for_status()
-    except EnvironmentError:
-        response = requests.Response()
-        response.status_code = 404
-        print("Failed to fetch update info")
 
     if response.status_code != 200:
         print("Failed to fetch update info")
@@ -161,34 +150,7 @@ async def update():
             message="Could not fetch update info.",
             urgency=Urgency.Critical,
         )
-
-    # Update new code
-    try:
-        with open("./IssUrineStatus.py", "w") as file:
-            file.write(response.text)
-
-        download_version_file()
-    except Exception as e:
-        print(f"Failed to write update: {e}")
-
-    return
-
-
-def up_to_date():
-    try:
-        url = "https://raw.githubusercontent.com/QuantumLoopHole/ISS-Urine-Tank-Percentage-Waybar-Plugin/refs/heads/main/version.txt"
-        response = requests.get(url)
-        response.raise_for_status()
-    except EnvironmentError:
-        response = requests.Response()
-        response.status_code = 404
-        print("Failed to fetch update info")
-
-    with open("./version.txt", "r") as file:
-        if file.read().strip() == response.text.strip():
-            return True
-        else:
-            return False
+        return
 
 
 async def version_controll():
@@ -204,8 +166,6 @@ async def version_controll():
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, ask_user_download)
 
-    if up_to_date():
-        return
     await update()
 
 
