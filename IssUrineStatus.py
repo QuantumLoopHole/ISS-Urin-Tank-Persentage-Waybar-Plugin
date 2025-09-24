@@ -33,7 +33,6 @@ async def main():
             "tooltip": "Can't access repository",
             "class": "piss",
         }
-        log(json.dumps(data))
         print(json.dumps(data), flush=True)
         return
 
@@ -70,7 +69,6 @@ async def main():
                         "tooltip": f"last update: {time.strftime('%Y-%m-%d %H:%M:%S')}",
                         "class": "piss",
                     }
-                    log(json.dumps(data))
                     print(json.dumps(data), flush=True)
 
 
@@ -221,11 +219,14 @@ async def version_controll():
 # ------------------------------
 if __name__ == "__main__":
     # Check if log exists, if not, create
-    print(os.path.exists(LOG))
+
     if not os.path.exists(LOG):
-        print("Creating log file")
         with open(LOG, "w") as f:
-            f.write("")
+            f.write(
+                f"==== Urine Tank Log ====\nCreated on: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            )
+        print("Created log file with header.")
+
     try:
         asyncio.run(version_controll())
         asyncio.run(main())
