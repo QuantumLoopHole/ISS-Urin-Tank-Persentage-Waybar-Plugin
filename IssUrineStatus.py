@@ -156,7 +156,7 @@ def ask_user_continue_update_checks():
         choice = rofi.stdout.decode().strip()
         if choice == "No":
             log("User opted out of future update checks.")
-            ask_user_continue_update_checks()
+            create_update_lock()
     except FileNotFoundError:
         log("Rofi not installed or not in PATH")
 
@@ -173,7 +173,7 @@ async def ask_user_update():
             await update()
         elif choice == "No":
             log("User opted out of this update.")
-            create_update_lock()
+            ask_user_continue_update_checks()
         else:
             ask_user_continue_update_checks()
     except FileNotFoundError:
