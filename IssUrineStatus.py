@@ -118,8 +118,6 @@ def ask_user_download():
                 "rofi",
                 "-dmenu",
                 "-p",
-                "ISS Urinate",
-                "-msg",
                 "Version file is missing. Download now?",
             ],
             input="Yes\nNo\n".encode(),
@@ -163,7 +161,7 @@ async def update():
         json.dumps({"text": "updating...", "tooltip": "Updating...", "class": "piss"}),
         flush=True,
     )
-
+    log(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Updating...")
     await notifier.send(
         title="Update Available", message="Starting update...", urgency=Urgency.Normal
     )
