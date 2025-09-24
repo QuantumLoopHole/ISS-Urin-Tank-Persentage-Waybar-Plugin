@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+# Update Test
 import asyncio
 import websockets
 import json
@@ -11,9 +13,9 @@ from desktop_notifier import DesktopNotifier, Urgency
 
 
 SELF_PATH = os.path.abspath(__file__)
-VERSION_FILE = os.path.abspath("urine_version.txt")
-UPDATE_LOCK_FILE = os.path.abspath("VersionControll.lock")
-LOG = os.path.abspath("urine_log.txt")
+VERSION_FILE = "~/.config/waybar/scripts/urine_version.txt"
+UPDATE_LOCK_FILE = "~/.config/waybar/scripts/VersionControll.lock"
+LOG = "~/.config/waybar/scripts/urine_log.txt"
 
 URI = "wss://push.lightstreamer.com/lightstreamer"
 PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
@@ -31,8 +33,7 @@ async def main():
             "tooltip": "Can't access repository",
             "class": "piss",
         }
-        print(json.dumps(data), flush=True)
-        # log(json.dumps(data))
+        log(json.dumps(data), flush=True)
         return
 
     async with websockets.connect(URI, subprotocols=PROTOCOLS) as ws:
@@ -68,18 +69,13 @@ async def main():
                         "tooltip": f"last update: {time.strftime('%Y-%m-%d %H:%M:%S')}",
                         "class": "piss",
                     }
-                    log(json.dumps(data))
-                    print(json.dumps(data), flush=True)
+                    log(json.dumps(data), flush=True)
 
 
 def log(text: str):
-    if not os.path.exists(LOG):
-        os.mknod(LOG)
-        with open(LOG, "a") as f:
-            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - Log created.\n")
-
     with open(LOG, "a") as f:
         f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} - {text}\n")
+    print(f"LOG: {text}")
 
 
 # ------------------------------
@@ -120,6 +116,8 @@ def ask_user_download():
                 "rofi",
                 "-dmenu",
                 "-p",
+                "ISS Urinate",
+                "-msg",
                 "Version file is missing. Download now?",
             ],
             input="Yes\nNo\n".encode(),
@@ -210,7 +208,7 @@ async def version_controll():
         return
     if os.path.exists(UPDATE_LOCK_FILE):
         return
-    if not os.path.exists(VERSION_FILE):
+    if not os.path.exists("./version.txt"):
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, ask_user_download)
     if await up_to_date():
@@ -218,22 +216,19 @@ async def version_controll():
     await update()
 
 
-def path_exists_if_not_download(path):
-    if not os.path.exists(path):
-        os.mknod(path)
-        log(f"File {path} created.")
-        return
-
-    log(f"File {path} exists.")
-
-
 # ------------------------------
-# trypoint
+# Entrypoint
 # ------------------------------
 if __name__ == "__main__":
     # Check if log exists, if not, create
-    try:
+    print(os.path.exists(LOG))
+    if not os.path.exists(LOG):
+        print("Creating log file")
+        with open(LOG, "w") as f:
+            f.write("")
+ """   try:
         asyncio.run(version_controll())
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(0)
+    """"
