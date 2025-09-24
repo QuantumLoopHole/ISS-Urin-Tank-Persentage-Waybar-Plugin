@@ -33,7 +33,8 @@ async def main():
             "tooltip": "Can't access repository",
             "class": "piss",
         }
-        log(json.dumps(data), flush=True)
+        log(json.dumps(data))
+        print(json.dumps(data), flush=True)
         return
 
     async with websockets.connect(URI, subprotocols=PROTOCOLS) as ws:
@@ -69,7 +70,8 @@ async def main():
                         "tooltip": f"last update: {time.strftime('%Y-%m-%d %H:%M:%S')}",
                         "class": "piss",
                     }
-                    log(json.dumps(data), flush=True)
+                    log(json.dumps(data))
+                    print(json.dumps(data), flush=True)
 
 
 def log(text: str):
