@@ -104,21 +104,26 @@ async def download_version_file():
     if text:
         with open(VERSION_FILE, "w") as f:
             f.write(text)
-    await ask_user_update()
+        log("Downloaded version file.")
+    else:
+        log("Failed to download version file.")
 
 
 # ------------------------------
 # Rofi prompts (blocking, run in executor)
 # ------------------------------
+
+
 def ask_user_download():
+    if SessionState.prompted_for_download:
+        return
+    SessionState.prompted_for_download = True
+    log(
+        f"Session flags: download_prompted={SessionState.prompted_for_download}, update_prompted={SessionState.prompted_for_update}"
+    )
     try:
         rofi = subprocess.run(
-            [
-                "rofi",
-                "-dmenu",
-                "-p",
-                "Version file is missing. Download now?",
-            ],
+            ["rofi", "-dmenu", "-p", "Version file missing. Download now?"],
             input="Yes\nNo\n".encode(),
             capture_output=True,
         )
@@ -126,6 +131,7 @@ def ask_user_download():
         if choice == "Yes":
             asyncio.run(download_version_file())
         else:
+            log("User declined to download version file.")
             ask_user_continue_update_checks()
     except FileNotFoundError:
         log("Rofi not installed or not in PATH")
@@ -142,6 +148,12 @@ def create_update_lock():
 
 
 def ask_user_continue_update_checks():
+    if SessionState.prompted_for_continue_checks:
+        return
+    SessionState.prompted_for_continue_checks = True
+    log(
+        f"Session flags: download_prompted={SessionState.prompted_for_download}, update_prompted={SessionState.prompted_for_update}"
+    )
     try:
         rofi = subprocess.run(
             [
@@ -162,19 +174,24 @@ def ask_user_continue_update_checks():
 
 
 async def ask_user_update():
+    if SessionState.prompted_for_update:
+        return
+    SessionState.prompted_for_update = True
+    log(
+        f"Session flags: download_prompted={SessionState.prompted_for_download}, update_prompted={SessionState.prompted_for_update}"
+    )
+
     try:
         rofi = subprocess.run(
             ["rofi", "-dmenu", "-p", "Update available. Update now?"],
-            input="Update now\nNo\n".encode(),
+            input="Yes\nNo\n".encode(),
             capture_output=True,
         )
         choice = rofi.stdout.decode().strip()
-        if choice == "Update now":
+        if choice == "Yes":
             await update()
-        elif choice == "No":
-            log("User opted out of this update.")
-            ask_user_continue_update_checks()
         else:
+            log("User declined update.")
             ask_user_continue_update_checks()
     except FileNotFoundError:
         log("Rofi not installed or not in PATH")
@@ -213,8 +230,6 @@ async def update():
         title="Update Complete", message="Restarting...", urgency=Urgency.Normal
     )
 
-    await download_version_file()
-
     # Restart with new code
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
@@ -232,15 +247,28 @@ async def up_to_date() -> bool:
 
 async def version_controll():
     if not await check_internet():
+        log("No internet connection. Skipping version check.")
         return
+
     if os.path.exists(UPDATE_LOCK_FILE):
+        log("Update checks disabled by user.")
         return
+
     if not os.path.exists(VERSION_FILE):
+        # Ask to download version file
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, ask_user_download)
-    if await up_to_date():
+
+    # If the user declined to download version.txt, stop here
+    if not os.path.exists(VERSION_FILE):
+        log("User declined version file download.")
         return
-    await ask_user_update()
+
+    # Check version and prompt if update is available
+    if not await up_to_date():
+        await ask_user_update()
+    else:
+        log("Script is up to date.")
 
 
 # ------------------------------
@@ -261,3 +289,9 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(0)
+
+
+class SessionState:
+    prompted_for_download = False
+    prompted_for_update = False
+    prompted_for_continue_checks = False
