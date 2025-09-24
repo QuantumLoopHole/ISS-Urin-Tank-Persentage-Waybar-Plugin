@@ -23,6 +23,13 @@ PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
 notifier = DesktopNotifier(app_name="ISS Urine Tank Percentage")
 
 
+# Session state to avoid multiple prompts
+class SessionState:
+    prompted_for_download = False
+    prompted_for_update = False
+    prompted_for_continue_checks = False
+
+
 # ------------------------------
 # Core worker
 # ------------------------------
@@ -289,9 +296,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(0)
-
-
-class SessionState:
-    prompted_for_download = False
-    prompted_for_update = False
-    prompted_for_continue_checks = False
