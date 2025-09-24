@@ -130,6 +130,11 @@ def ask_user_download():
         log("Rofi not installed or not in PATH")
 
 
+def create_update_lock():
+    with open(UPDATE_LOCK_FILE, "w") as f:
+        f.write(f"Lock created on: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+
+
 def ask_user_continue_update_checks():
     try:
         rofi = subprocess.run(
@@ -144,8 +149,8 @@ def ask_user_continue_update_checks():
         )
         choice = rofi.stdout.decode().strip()
         if choice == "No":
-            with open(UPDATE_LOCK_FILE, "w") as f:
-                f.write("User opted out of update checks.")
+            log("User opted out of future update checks.")
+            create_update_lock()
     except FileNotFoundError:
         log("Rofi not installed or not in PATH")
 
@@ -153,6 +158,27 @@ def ask_user_continue_update_checks():
 # ------------------------------
 # Update handling
 # ------------------------------
+
+
+async def ask_user_update():
+    try:
+        rofi = subprocess.run(
+            ["rofi", "-dmenu", "-p", "Update available. Update now?"],
+            input="Update now\nNo\n".encode(),
+            capture_output=True,
+        )
+        choice = rofi.stdout.decode().strip()
+        if choice == "Update now":
+            await update()
+        elif choice == "No":
+            log("User opted out of this update.")
+            create_update_lock()
+        else:
+            ask_user_continue_update_checks()
+    except FileNotFoundError:
+        log("Rofi not installed or not in PATH")
+
+
 async def update():
     log("Update available, starting update...")
     print(
@@ -211,7 +237,7 @@ async def version_controll():
         await loop.run_in_executor(None, ask_user_download)
     if await up_to_date():
         return
-    await update()
+    await ask_user_update()
 
 
 # ------------------------------
