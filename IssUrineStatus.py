@@ -213,6 +213,8 @@ async def update():
         title="Update Complete", message="Restarting...", urgency=Urgency.Normal
     )
 
+    await download_version_file()
+
     # Restart with new code
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
