@@ -210,7 +210,7 @@ async def version_controll():
         return
     if os.path.exists(UPDATE_LOCK_FILE):
         return
-    if not os.path.exists("./version.txt"):
+    if not os.path.exists(VERSION_FILE):
         loop = asyncio.get_running_loop()
         await loop.run_in_executor(None, ask_user_download)
     if await up_to_date():
