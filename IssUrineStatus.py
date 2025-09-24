@@ -13,9 +13,9 @@ from desktop_notifier import DesktopNotifier, Urgency
 
 
 SELF_PATH = os.path.abspath(__file__)
-VERSION_FILE = "~/.config/waybar/scripts/urine_version.txt"
-UPDATE_LOCK_FILE = "~/.config/waybar/scripts/VersionControll.lock"
-LOG = "~/.config/waybar/scripts/urine_log.txt"
+VERSION_FILE = os.path.expanduser("~/.config/waybar/scripts/urine_version.txt")
+UPDATE_LOCK_FILE = os.path.expanduser("~/.config/waybar/scripts/VersionControll.lock")
+LOG = os.path.expanduser("~/.config/waybar/scripts/urine_log.txt")
 
 URI = "wss://push.lightstreamer.com/lightstreamer"
 PROTOCOLS = ["TLCP-2.5.0.lightstreamer.com"]
@@ -226,9 +226,8 @@ if __name__ == "__main__":
         print("Creating log file")
         with open(LOG, "w") as f:
             f.write("")
- """   try:
+    try:
         asyncio.run(version_controll())
         asyncio.run(main())
     except KeyboardInterrupt:
         sys.exit(0)
-    """"
