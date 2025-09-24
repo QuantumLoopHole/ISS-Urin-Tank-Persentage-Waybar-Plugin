@@ -104,6 +104,7 @@ async def download_version_file():
     if text:
         with open(VERSION_FILE, "w") as f:
             f.write(text)
+    await ask_user_update()
 
 
 # ------------------------------
@@ -130,6 +131,11 @@ def ask_user_download():
         log("Rofi not installed or not in PATH")
 
 
+# ------------------------------
+# Update handling
+# ------------------------------
+
+
 def create_update_lock():
     with open(UPDATE_LOCK_FILE, "w") as f:
         f.write(f"Lock created on: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
@@ -153,11 +159,6 @@ def ask_user_continue_update_checks():
             create_update_lock()
     except FileNotFoundError:
         log("Rofi not installed or not in PATH")
-
-
-# ------------------------------
-# Update handling
-# ------------------------------
 
 
 async def ask_user_update():
